@@ -1,8 +1,7 @@
-import Image from "next/image";
 
 export default function Home() {
   return (
-    <div>Hello World
+    <div className="">Hello World . This is v movie
     </div>
   );
 }
