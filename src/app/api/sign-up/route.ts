@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 export async function POST(request:NextRequest){
     await dbConnect()
     try{
-        const {username, email, password} = await request.json()
+        const {username, email, password, name, city} = await request.json()
         console.log("Incoming username:", username);
         if (!username || !email || !password) {
           return Response.json(
@@ -65,6 +65,8 @@ export async function POST(request:NextRequest){
             const newUser = new User({
                 username,
                 email,
+                name,
+                city,
                 password:hashedPassword,
                 isVerified:false,
                 verifyCode,

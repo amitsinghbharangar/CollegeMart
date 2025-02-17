@@ -1,32 +1,31 @@
 'use client'
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useRecoilState, useRecoilValue } from "recoil";
-import { useRouter } from "next/router"; // Replace useNavigate with useRouter
-import { CartAtom } from "../store/atoms/cart";
-import { Item } from "../store/dataTypes";
-import { UserAtom } from "../store/atoms/user";
+import { CartItem } from "@/model";
+import { useRouter } from "next/router";
 import Product from "./Product";
 import { FilterLabel } from "./FilterLabel";
 import { ProductsSkeleton } from "./ProductsSkeleton";
 import { Pagination } from "./Pagination";
-// Define Cart Type
-export interface CartType {
-  condition: string;
-  createdAt: string;
-  description: string;
-  id: string;
-  image: string;
-  itemname: string;
-  ownerId: string;
-  price: number;
-  quantity: number;
-  sold: boolean;
-  updatedAt: string;
-  _id: string;
-}
+import { useCart } from "@/store/context/CartContext";
+import { useSession } from "next-auth/react";
+import { Item } from "@/model/Item";
 
-// Define Page Metadata Type
+// export interface CartType {
+//   condition: string;
+//   createdAt: string;
+//   description: string;
+//   id: string;
+//   image: string;
+//   itemname: string;
+//   ownerId: string;
+//   price: number;
+//   quantity: number;
+//   sold: boolean;
+//   updatedAt: string;
+//   _id: string;
+// }
+
 export interface PageMetaTypes {
   total: number;
   page: number;
@@ -34,47 +33,42 @@ export interface PageMetaTypes {
 }
 
 const Products = () => {
+  const { data: session } = useSession();
   const [items, setItems] = useState<Item[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [cart, setCart] = useRecoilState<CartType[]>(CartAtom);
-  const [filter, setFilter] = useState<string>("allitems");
+  const [isLoading, setIsLoading] = useState(false);
+  const { cart } = useCart();
+  const [filter, setFilter] = useState("allitems");
   const [pageMeta, setPageMeta] = useState<PageMetaTypes>({
     total: 0,
     page: 1,
     pages: 0,
   });
-  const user = useRecoilValue<UserAtom>(UserAtom);
-  const router = useRouter(); // Replace useNavigate with useRouter
-
-  // Fetch Items Function
+  const user = session?.user
+  const router = useRouter()
   const getItems = async (page: number) => {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/item/allitems?page=${page}&limit=8`
+          `api/item/allitems?page=${page}&limit=8`
       );
-      setItems(response.data.data as Item[]);
-      setPageMeta(response.data.meta as PageMetaTypes);
+      setItems(response.data.data);
+      setPageMeta(response.data.meta);
       setIsLoading(false);
     } catch (err) {
       setIsLoading(false);
-      console.error(err);
+      console.log(err);
     }
   };
-
-  // Handle Contact Navigation
   const handleContact = (item: Item) => {
-    if (!user?.user) return;
-    const buyerId = user.user.id;
+    const buyerId = user?._id;
     const sellerId = item.ownerId;
-    router.push(`/chats/${buyerId}_${sellerId}`); // Use router.push for navigation
+    router.push(`/chats/${buyerId}_${sellerId}`);
   };
-
-  // Handle Adding to Cart
   const handleCart = (item: Item) => {
     const existingItemIndex = cart.findIndex(
-      (cartItem: CartType) => cartItem.id === item.id
+      (cartItem: Item) => cartItem.id === item.id
     );
+
     if (existingItemIndex !== -1) {
       setCart((prevCart: CartType[]) => {
         const updatedCart = prevCart.map((cartItem, index) => {
@@ -86,34 +80,23 @@ const Products = () => {
         return updatedCart;
       });
     } else {
-      const newItem: CartType = { ...item, quantity: 1 };
+      const newItem: Item = { ...item, quantity: 1 };
       setCart([...cart, newItem]);
     }
   };
-
-  // Fetch Items on Page Change
   useEffect(() => {
-    const currentPage = parseInt(router.query.page as string) || 1; // Get page from query params
-    setPageMeta((prev) => ({ ...prev, page: currentPage }));
-    getItems(currentPage);
-  }, [router.query.page]);
+    getItems(pageMeta.page);
+  }, [pageMeta.page]);
 
-  // Handle Pagination
   const handlePageChange = (newPage: number) => {
-    router.push({
-      pathname: router.pathname,
-      query: { ...router.query, page: newPage }, // Update query params
-    });
+    setPageMeta((prev) => ({ ...prev, page: newPage }));
   };
 
-  // Render Loading Skeleton
   if (isLoading) {
     return <ProductsSkeleton />;
   }
-
   return (
     <section className="grid lg:grid-cols-6 grid-cols-1 mx-8">
-      {/* Filters Section */}
       <div className="rounded-md p-5">
         <h3 className="text-3xl font-semibold">Filter</h3>
         <FilterLabel
@@ -133,15 +116,13 @@ const Products = () => {
           />
         )}
       </div>
-
-      {/* Products Section */}
-      <div className="lg:col-span-5 p-5">
+      <div className="lg:col-span-5 p-5 ">
         <h3 className="text-4xl mx-2 mb-5">All Items</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5 m-2">
           {items.map(
             (item: Item) =>
               (filter !== "mycity" ||
-                item.city.toLowerCase() === user?.user?.city?.toLowerCase()) && (
+                item.city.toLowerCase() === user?.city?.toLowerCase()) && (
                 <Product
                   key={item.id}
                   item={item}
@@ -152,7 +133,6 @@ const Products = () => {
               )
           )}
         </div>
-        {/* Pagination */}
         <div className="w-full flex justify-center m-4">
           <Pagination
             totalPages={pageMeta.pages}

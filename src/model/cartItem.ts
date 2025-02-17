@@ -12,6 +12,8 @@ export interface CartItem {
   quantity: number;
   sold: boolean;
   updatedAt: Date;
+  city:string;
+  ownername:string
 }
 
 export const cartItemSchema = new Schema<CartItem>({

@@ -2,15 +2,24 @@
 import { useRouter } from "next/navigation";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 import { formatDistanceToNow } from "date-fns";
-import { Item, User } from "../store/dataTypes"; // Adjust the import path as needed
 import { CustomButton } from "./CustomButton";
 import { getClassForCondition } from "../utils/ClassHelper";
+import { Item } from "@/model/Item";
+
+export interface  userType{
+  name: string | null | undefined;
+  _id?:string;
+  isverified?:boolean;
+  isOnline?:boolean;
+  username?:string;
+  city?:string;
+}
 
 export interface ProductType {
   item: Item;
   handleCart: (item: Item) => void;
   handleContact: (item: Item) => void;
-  user: User | null; // Update type to allow null if no user is logged in
+  user: userType ; // Update type to allow null if no user is logged in
 }
 
 export default function Product({
