@@ -5,148 +5,102 @@ import { formatDistanceToNow } from "date-fns";
 import { CustomButton } from "./CustomButton";
 import { getClassForCondition } from "../utils/ClassHelper";
 import { Item } from "@/model/Item";
+import { User } from "@/model";
+import { useSession } from "next-auth/react";
+import SignInModal from "./SignInModal";
+import { useEffect, useState } from "react";
 
-export interface  userType{
-  name: string | null | undefined;
-  _id?:string;
-  isverified?:boolean;
-  isOnline?:boolean;
-  username?:string;
-  city?:string;
-}
 
 export interface ProductType {
   item: Item;
   handleCart: (item: Item) => void;
   handleContact: (item: Item) => void;
-  user: userType ; // Update type to allow null if no user is logged in
+ 
 }
 
 export default function Product({
   item,
   handleCart,
   handleContact,
-  user,
+  
 }: ProductType) {
   const router = useRouter();
+  const { data: session,status } = useSession();
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false)
+  const [pendingCartItem, setPendingCartItem] = useState<Item | null>(null);
+  useEffect(() => {
+    if (status === "authenticated" && pendingCartItem) {
+      handleCart(pendingCartItem); // Login ke baad cart mein add karo
+      setPendingCartItem(null); // Reset pending item
+      setIsSignInModalOpen(false); // Modal band karo
+    }
+  }, [status, pendingCartItem, handleCart]);
 
   return (
-    <div
-      className="flex flex-col justify-between max-w-sm hover:scale-105 hover:shadow-lg hover:bg-white ease-in duration-300 rounded-md cursor-pointer"
-      key={item.id}
-    >
-      {/* Product Image */}
-      <img
-        className="rounded-t-md object-cover w-full h-48"
-        src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/images/${item.image}`}
-        onClick={() => router.push(`/item/${item.id}`)}
-        alt={item.itemname}
+   <div
+  className="flex flex-col justify-between max-w-sm hover:shadow-lg hover:bg-white ease-in duration-300 rounded-md cursor-pointer group"
+  key={String(item._id)}
+>
+  {/* Product Image */}
+  <div className="overflow-hidden rounded-t-md">
+    <img
+      className="object-cover w-full h-48 transition-transform duration-300 ease-in-out group-hover:scale-105 rounded"
+      src={`${item.image}`}
+      onClick={() => router.push(`/item/${item._id}`)}
+      alt={item.itemName}
+    />
+  </div>
+
+  {/* Product Details */}
+  <div>
+    <div className="p-2">
+      <h4 className="text-2xl my-2 font-semibold">{item.itemName}</h4>
+      <p className="text-xl my-2 text-orange-700 font-bold">₹{item.price}</p>
+      <p className={`my-2 font-medium ${getClassForCondition(item.condition)}`}>
+        Condition: {item.condition}
+      </p>
+      <p className="font-bold text-gray-600">
+        {formatDistanceToNow(new Date(item.createdAt), {
+          addSuffix: true,
+        })}
+      </p>
+    </div>
+
+    {/* Action Buttons */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 p-2">
+      {/* Add to Cart Button */}
+      <CustomButton
+        onClick={() => {
+          if (session) {
+            handleCart(item);
+            
+          } else {
+            setIsSignInModalOpen(true)
+          }
+        }}
+        label={<AiOutlineShoppingCart size={20} />}
+        color="yellow"
       />
 
-      {/* Product Details */}
-      <div>
-        <div className="p-2">
-          <h4 className="text-2xl my-2 font-semibold">{item.itemname}</h4>
-          <p className="text-xl my-2 text-orange-700 font-bold">₹{item.price}</p>
-          <p
-            className={`my-2 font-medium ${getClassForCondition(item.condition)}`}
-          >
-            Condition: {item.condition}
-          </p>
-          <p className="font-bold text-gray-600">
-            {formatDistanceToNow(new Date(item.createdAt), {
-              addSuffix: true,
-            })}
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 p-2">
-          {/* Add to Cart Button */}
-          <CustomButton
-            onClick={() => {
-              if (user) {
-                handleCart(item);
-              } else {
-                router.push("/login");
-              }
-            }}
-            label={<AiOutlineShoppingCart size={30} />}
-            color="yellow"
-          />
-
-          {/* Sold or Contact Owner Button */}
-          {item.sold ? (
-            <button className="p-2 w-full lg:w-auto bg-gray-300 rounded-md shadow-md text-center">
-              Sold
-            </button>
-          ) : (
-            <CustomButton
-              onClick={() => handleContact(item)}
-              label={"Contact Owner"}
-              color="blue"
-            />
-          )}
-        </div>
-      </div>
+      {/* Sold or Contact Owner Button */}
+      {item.sold ? (
+        <button className="p-2 w-full lg:w-auto bg-gray-300 rounded-md shadow-md text-center">
+          Sold
+        </button>
+      ) : (
+        <CustomButton
+          onClick={() => handleContact(item)}
+          label={"Contact Owner"}
+          color="blue"
+        />
+      )}
     </div>
+  </div>
+  <SignInModal
+        isOpen={isSignInModalOpen}
+        onClose={()=>setIsSignInModalOpen(false)} />
+</div>
+
+
   );
 }
-
-
-
-// "use client";
-// import { useState } from "react";
-// import Product from "../components/Product";
-
-// const HomePage = () => {
-//   const [user, setUser] = useState<User | null>(null); // Replace with actual user data
-
-//   const handleCart = (item: any) => {
-//     console.log("Added to cart:", item);
-//   };
-
-//   const handleContact = (item: any) => {
-//     console.log("Contact owner for:", item);
-//   };
-
-//   const products = [
-//     {
-//       id: 1,
-//       itemname: "Laptop",
-//       price: 50000,
-//       condition: "Good",
-//       createdAt: new Date(),
-//       image: "laptop.jpg",
-//       sold: false,
-//     },
-//     {
-//       id: 2,
-//       itemname: "Phone",
-//       price: 20000,
-//       condition: "Excellent",
-//       createdAt: new Date(),
-//       image: "phone.jpg",
-//       sold: true,
-//     },
-//   ];
-
-//   return (
-//     <div className="p-6">
-//       <h1 className="text-3xl font-bold mb-4">Products</h1>
-//       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//         {products.map((product) => (
-//           <Product
-//             key={product.id}
-//             item={product}
-//             handleCart={handleCart}
-//             handleContact={handleContact}
-//             user={user}
-//           />
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default HomePage;

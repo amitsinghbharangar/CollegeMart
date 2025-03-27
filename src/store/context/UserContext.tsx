@@ -5,9 +5,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 type User = {
   id: string;
   name: string;
-  username: string;
   image?: string;
-  
   // Add other user properties as needed
 };
 
@@ -34,7 +32,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       setUser({
         id: String(session.user._id),
         name: session.user.name || "",
-        username: session.user.username || "",
       });
       setLoading(false);
     } else if (status === "unauthenticated") {

@@ -1,19 +1,17 @@
 import { Schema, Types } from "mongoose";
 
 export interface CartItem {
-  condition: string;
-  createdAt: Date;
-  description: string;
   id: string;
-  image: string;
   itemname: string;
-  ownerId: string;
+  condition: string;
   price: number;
-  quantity: number;
   sold: boolean;
+  description: string;
+  image: string;
+  createdAt: Date;
+  quantity: number;
+  ownerId: string;
   updatedAt: Date;
-  city:string;
-  ownername:string
 }
 
 export const cartItemSchema = new Schema<CartItem>({

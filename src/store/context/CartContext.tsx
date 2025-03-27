@@ -7,6 +7,7 @@ import { CartItem } from "@/model";
 type CartContextType = {
   cart: CartItem[];
   loading: boolean;
+  setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   error: string | null;
   fetchCart: () => Promise<void>;
 };
@@ -16,22 +17,23 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // Create a provider component
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-const { data: session, status } = useSession();
+  const { data: session, status } = useSession();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Function to fetch the cart
   const fetchCart = async () => {
-    if (status=='unauthenticated') {
+    if (status !== "authenticated" || !session?.user?._id) {
       setError("User not authenticated");
+      setLoading(false); // Loading band karo
+      setCart([]); // Cart reset karo
       return;
     }
-
     setLoading(true);
     try {
       const res = await axios.get(
-        "api/user/cart",
+        "/api/userCart",
         {
           headers: {
             authorization: "Bearer " + session?.user._id,
@@ -55,13 +57,21 @@ const { data: session, status } = useSession();
 
   // Fetch the cart when the component mounts or the user changes
   useEffect(() => {
-    fetchCart();
-  }, [session]);
+    if (status === "authenticated") {
+      fetchCart();
+    } else if (status === "unauthenticated") {
+      setError("User not authenticated");
+      setCart([]);
+      setLoading(false);
+    }
+    // "loading" state mein kuch mat karo, wait karo
+  }, [status]);
 
   // Provide the context value
   const value = {
     cart,
     loading,
+    setCart,
     error,
     fetchCart,
   };

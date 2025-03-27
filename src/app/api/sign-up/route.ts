@@ -1,39 +1,22 @@
 import { dbConnect } from "@/lib/dbConnect";
 import { User } from "@/model/User";
 import bcrypt from 'bcryptjs'
-// import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
 import { NextRequest } from "next/server";
 import mongoose from "mongoose";
+import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
 
 export async function POST(request:NextRequest){
+    console.log("post function is running");
     await dbConnect()
     try{
-        const {username, email, password, name, city} = await request.json()
-        console.log("Incoming username:", username);
-        if (!username || !email || !password) {
+        
+        const {email, password, name, city} = await request.json()
+        console.log({name,email,password,city})
+        if (!email || !password) {
           return Response.json(
             { success: false, message: "All fields are required." },
             { status: 400 }
           );
-        }
-
-        if (!username.trim()) {
-          return Response.json(
-            { success: false, message: "Username cannot be empty." },
-            { status: 400 }
-          );
-        }
-        //find the username if exists 
-        const existingVerifiedUser = await User.findOne({
-            username,isVerified:true
-        })
-        if(existingVerifiedUser){
-            return Response.json({
-                success:false,
-                message:'Username is already taken'
-            },{status:400})
-        }else{
-          console.log("username is available return response true")
         }
 
     //  check if user exits with this email
@@ -42,18 +25,21 @@ export async function POST(request:NextRequest){
         // create verify code 
         const verifyCode = Math.floor(100000 + Math.random() * 900000).toString()
         if(existingUserByEmail){
+            console.log("user is existed")
 
             if(existingUserByEmail.isVerified){
+                console.log("user is verified")
                 return Response.json({
                 success:false,
                 message:"User already exits with this email! Please use another email."
             },{status:400})
             }else{
+                console.log("user is not verified")
                 const hashedPassword = await bcrypt.hash(password,10);
                 existingUserByEmail.password = hashedPassword;
                 existingUserByEmail.verifyCode = verifyCode;
                 existingUserByEmail.verifyCodeExpiry = new Date(Date.now()+3600000);
-                console.log("everything is fine here")
+                
                 await existingUserByEmail.save()
             }
         }else{
@@ -63,7 +49,6 @@ export async function POST(request:NextRequest){
     
         //  now create user
             const newUser = new User({
-                username,
                 email,
                 name,
                 city,
@@ -71,46 +56,32 @@ export async function POST(request:NextRequest){
                 isVerified:false,
                 verifyCode,
                 verifyCodeExpiry:expiryDate,
-                isAcceptingMessage:true,
-                messages:[],
-                reply:[]
+                itemListId:[],
+                cart:[],
+                online:false,
+                chatRooms:[]
 
             })
-            console.log("Everything is fine")
-            console.log(newUser)
+            
+            
             await newUser.save()
 
         }
 
         // send verification email
-        // const emailResponse = await sendVerificationEmail(email,username,verifyCode)
-        // if(!emailResponse.success){
-        //     return Response.json({
-        //         success:false,
-        //         message:emailResponse.message
-        //     },{status:500})
-        // }
+        const emailResponse = await sendVerificationEmail(email,name,verifyCode)
+        if(!emailResponse.success){
+            return Response.json({
+                success:false,
+                message:emailResponse.message
+            },{status:500})
+        }
         return Response.json({
                 success:true,
                 message:"User registered successfully. Please verify your email."
             },{status:201})
     }catch(error){
-      if (
-        error instanceof mongoose.Error ||
-        (typeof error === "object" &&
-            error !== null &&
-            "code" in error &&
-            (error).code === 11000)
-    ) {
-        console.log(error)
-        const duplicateField = Object.keys((error as any).keyValue)[0];
-        if (duplicateField === "username") {
-            throw new Error("This username is already taken. Please choose another.");
-        }
-        throw new Error(`${duplicateField} is already taken.`);
-    } else {
         console.error("Unexpected error while saving user:", error);
         throw new Error("An unexpected error occurred.");
-    }
   }
   }

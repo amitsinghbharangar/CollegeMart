@@ -1,24 +1,22 @@
-import { Schema, Types } from "mongoose";
-export interface Item {
-  id: string;
-  itemname: string;
+import mongoose, { Document, Schema, Types } from "mongoose";
+export interface Item extends Document {
+  itemName: string;
   condition: string;
   price: number;
   sold: boolean;
   description: string;
   image: string;
   createdAt: Date;
-  quantity: number;
+  ownerName:String;
   ownerId: string;
   city:string;
 }
-export const ItemSchema = new Schema<Item>({
+const ItemSchema:Schema<Item> = new Schema({
   condition: String,
   createdAt: Date,
   description: String,
-  id: String,
   image: String,
-  itemname:{
+  itemName:{
         type:String,
         required:[true,"itemname is required"],
         trim:true,
@@ -32,7 +30,10 @@ export const ItemSchema = new Schema<Item>({
         required:[true,"Price is required"],        
     },
     
-  quantity: Number,
+  ownerName:{
+    type:String,
+    required:[true,"OwnerName is required"]
+  },
   sold: Boolean,
   city:{
         type:String,
@@ -40,3 +41,4 @@ export const ItemSchema = new Schema<Item>({
         
     },
 });
+export const Item = (mongoose.models.Item as mongoose.Model<Item>) || mongoose.model<Item>("Item",ItemSchema)

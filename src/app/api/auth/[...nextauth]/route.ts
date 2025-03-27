@@ -11,7 +11,7 @@ export const authOptions: AuthOptions = {
             id:"credentials",
             name:"Credentials",
             credentials:{
-                username:{label:"Username", type:"text", placeholder:"username"},
+                email:{label:"Email", type:"text", placeholder:"Email"},
                 password:{label:"Password", type:"password"}
             },
             async authorize(credentials: any):Promise<any>{
@@ -19,14 +19,13 @@ export const authOptions: AuthOptions = {
                 await dbConnect();
                 try{
                     const user = await User.findOne({
-                        $or:[
-                            {username:credentials.identifier},
-                            {email:credentials.identifier},
-                        ]
+                        email:credentials.email
                     })
                     if (!user){
                         throw new Error("No user find with this username or email");
                     }
+                    
+                    
                     if(!user.isVerified){
                         throw new Error("Please verify your account before login");
                     }
@@ -37,43 +36,49 @@ export const authOptions: AuthOptions = {
                         throw new Error("Incorrect Password");
                     }
                 }catch(err:any){
+                    console.error("Authorize error:", err);
                     throw new Error(err)
                 }
             }
         })
     ],
+    pages: {
+    signIn: "/", // Prevents redirect to default NextAuth sign-in page
+  },
     callbacks:{
         async jwt({token, user}){
+            
             if(user){
                 token._id = user._id?.toString();
                 token.name = user.name;
                 token.isVerified = user.isVerified;
                 token.isOnline = user.isOnline; 
-                token.username = user.username;
+                token.email = user.email;
+                token.phone = user.phone
                 token.city = user.city;
             }
             return token;
         },
         async session({session, token}){
+            
             if(token){
                 session.user._id = token._id;
                 session.user.isVerified = token.isVerified;
                 session.user.isOnline = token.isOnline;
-                session.user.username = token.username;
                 session.user.name = token.name;
                 session.user.city = token.city;
+                session.user.email = token.email;
+                session.user.phone = token.phone;
             }
             return session;
         }
     },
-    pages:{
-        signIn:'/sign-in'
-    },
+    
     session:{
         strategy:"jwt",
         maxAge: 24 * 60 * 60,
     },
-    secret:process.env.AUTH_SECRET
+    secret:process.env.NEXTAUTH_SECRET
 }
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

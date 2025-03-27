@@ -1,9 +1,10 @@
 "use client"; // Required for using hooks in Next.js App Router
+import { CartItem } from "@/model";
 import { useRouter } from "next/navigation";
-import { CartType } from "./Products"; // Adjust the import path as needed
+ // Adjust the import path as needed
 
 interface SearchResultsType {
-  results: Array<CartType> | null;
+  results: Array<CartItem> | null;
 }
 
 const SearchResults = ({ results }: SearchResultsType) => {
@@ -13,7 +14,7 @@ const SearchResults = ({ results }: SearchResultsType) => {
     <div className="w-full rounded-md shadow-md mt-2 overflow-y-auto max-h-48 text-lg bg-white">
       {/* Display search results */}
       {results && results.length > 0 ? (
-        results.map((item: CartType, index: number) => (
+        results.map((item: CartItem, index: number) => (
           <div
             key={index}
             className="p-2 text-gray-700 hover:bg-slate-100 cursor-pointer"
@@ -24,7 +25,7 @@ const SearchResults = ({ results }: SearchResultsType) => {
         ))
       ) : (
         // Display "No results found" message
-        <div className="p-2 text-gray-500 text-center">No results found</div>
+        <div className="p-2 text-gray-500 text-center">No results found hello</div>
       )}
     </div>
   );
